@@ -1,0 +1,2 @@
+# JitJai-Journal
+academic project
