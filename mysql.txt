@@ -1,0 +1,21 @@
+-- สร้างฐานข้อมูล
+CREATE DATABASE jjj;
+USE jjj;
+
+-- สร้างตารางผู้ใช้ (users)
+CREATE TABLE users (
+    email VARCHAR(255) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
+    fname VARCHAR(50) NOT NULL,
+    lname VARCHAR(50) NOT NULL
+);
+
+-- สร้างตารางบันทึกไดอารี่ (diary)
+CREATE TABLE diary (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    text TEXT NOT NULL,
+    sentiment VARCHAR(3) NOT NULL,
+    date DATE NOT NULL,
+    FOREIGN KEY (email) REFERENCES users(email)
+);
