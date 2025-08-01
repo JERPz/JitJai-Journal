@@ -8,24 +8,27 @@ Welcome! This guide will help you get your project up and running quickly on **M
 
 Before you begin, ensure you have the following installed:
 
-- [Docker](https://www.docker.com/)
-- [Python 3.8+](https://www.python.org/downloads/)
-- [pip](https://pip.pypa.io/en/stable/)
-- (Optional) [Streamlit](https://streamlit.io/) — will be installed via script if not available
+* [Docker](https://www.docker.com/)
+* [Python 3.8+](https://www.python.org/downloads/)
+* [pip](https://pip.pypa.io/en/stable/)
+* (Optional) [Streamlit](https://streamlit.io/) — will be installed via script if not available
 
 ---
 
 ## 🖥️ Running the Project
 
-### 1. For Mac and Linux
+### ✅ 1. For Mac and Linux
 
 Open your terminal and navigate to the project folder. Then run:
 
 ```bash
 chmod +x run_setup.sh
 ./run_setup.sh
+```
 
-### 2. For Windows
+---
+
+### ✅ 2. For Windows
 
 Open **Command Prompt** or **PowerShell** in the project folder. Then run:
 
@@ -69,7 +72,7 @@ You can manage the PostgreSQL database via the pgAdmin web interface:
 
 ## 🧾 Notes
 
-* The first run might take a few minutes as Docker pulls required images.
+* The first run might take a few minutes as Docker pulls the required images.
 * If the browser doesn’t open automatically, visit: [http://localhost:8501](http://localhost:8501)
 * To stop the app and containers, press `Ctrl+C` and run:
 
