@@ -1,6 +1,3 @@
-แน่นอน! ด้านล่างคือเนื้อหา `README.md` ที่คุณสามารถ **คัดลอกไปวางได้ทันที** แบบพร้อมใช้งาน:
-
-````markdown
 # 🚀 Project Setup & Usage Guide
 
 Welcome! This guide will help you get your project up and running quickly on **Mac/Linux** or **Windows**. The setup scripts will take care of everything—from spinning up Docker containers to launching the Streamlit app.
@@ -27,9 +24,6 @@ Open your terminal and navigate to the project folder. Then run:
 ```bash
 chmod +x run_setup.sh
 ./run_setup.sh
-````
-
----
 
 ### 2. For Windows
 
