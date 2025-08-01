@@ -1,5 +1,4 @@
 import streamlit as st
-import mysql.connector
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,22 +7,34 @@ from textblob import TextBlob
 from streamlit_option_menu import option_menu
 from mysql.connector import Error
 from datetime import datetime
-from transformers import pipeline
-from matplotlib import rc
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+from matplotlib import font_manager, rc
+import psycopg2
+from psycopg2 import OperationalError
+import torch
+from psycopg2.extras import RealDictCursor
 
-# setting
-rc('font', family='Tahoma')
-NAV_LOGO = "C:/JJJ/JitJai-Journal/data/logo1.png"  
-ICON_LOGO = "C:/JJJ/JitJai-Journal/data/logo.png" 
 
-forDB = {"host": "localhost","user": "root","password": "","database": "jjj"}
+plt.rcParams['font.family'] = ['Sarabun', 'Tahoma', 'Thonburi', 'sans-serif']
+plt.rcParams['axes.unicode_minus'] = False 
+
+NAV_LOGO = "./data/logo1.png"
+ICON_LOGO = "./data/logo.png"
+
+forDB = {
+    "host": "localhost",
+    "database": "jjj",
+    "user": "root",
+    "password": "rootpass",
+    "port": 5432
+}
 
 #thx u Khun Poom-Sci alot kub
-model_name = "poom-sci/WangchanBERTa-finetuned-sentiment"
-#model_name = "./results"
-sentiment_analyzer = pipeline("sentiment-analysis", model=model_name)
-
-
+sentiment_analyzer = pipeline(
+    "sentiment-analysis",
+    model="poom-sci/WangchanBERTa-finetuned-sentiment",
+    tokenizer="poom-sci/WangchanBERTa-finetuned-sentiment"
+)
 st.markdown("""
     <style>
     /* เปลี่ยนสีพื้นหลังของ text_area */
@@ -45,14 +56,14 @@ st.markdown("""
     <style>
     /* เปลี่ยนสีพื้นหลังของช่องป้อนข้อความ */
     div[data-baseweb="input"] {
-        background-color: #1E90FF !important; 
-        border-radius: 10px; 
+        background-color: #1E90FF !important;
+        border-radius: 10px;
         padding: 4px;
     }
 
     /* เปลี่ยนสีฟอนต์ในช่องป้อนข้อความ */
     div[data-baseweb="input"] input {
-        color: black !important; 
+        color: black !important;
         font-size: 16px;
     }
     </style>
@@ -100,7 +111,7 @@ st.markdown("""
     input, textarea, select {
         color: black !important;
     }
-    
+
     /* ป้องกันตัวอักษรที่เป็น placeholder ในช่อง input ไม่ให้เป็นสีขาว */
     input::placeholder, textarea::placeholder {
         color: gray !important;
@@ -138,11 +149,11 @@ st.markdown("""
     }
 
     /* เปลี่ยนสีตัวอักษรใน header ของ sidebar */
-    [data-testid="stSidebar"] h1, 
-    [data-testid="stSidebar"] h2, 
-    [data-testid="stSidebar"] h3, 
-    [data-testid="stSidebar"] h4, 
-    [data-testid="stSidebar"] h5, 
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] h4,
+    [data-testid="stSidebar"] h5,
     [data-testid="stSidebar"] h6 {
         color: white !important;
     }
@@ -160,22 +171,23 @@ st.markdown(page_bg_img, unsafe_allow_html=True)
 class DB:
     def __init__(self):
         self.connection = None
-    
+
     def con(self):
         try:
-            self.connection = mysql.connector.connect(**forDB)
-            return self.connection if self.connection.is_connected() else None
-        except Error as e:
-            st.error(e)
+            self.connection = psycopg2.connect(**forDB)
+            return self.connection
+        except OperationalError as e:
+            st.error(f"Database connection failed: {e}")
             return None
-        
+
     def close(self):
         if self.connection:
             self.connection.close()
 
+
 #subclass inherit jak DB ma
 class forquery(DB):
-    def login(self,email,password):
+    def login(self, email, password):
         con = self.con()
         if con:
             cursor = con.cursor()
@@ -185,54 +197,39 @@ class forquery(DB):
             con.close()
             return user
         return None
-    
+
     def register(self, name, lastname, email, password):
         con = self.con()
         if con:
             cursor = con.cursor()
-            cursor.execute("INSERT INTO users (email, password, fname, lname) VALUES (%s, %s, %s, %s)", 
-                           (email, password, name, lastname))
+            cursor.execute(
+                "INSERT INTO users (email, password, fname, lname) VALUES (%s, %s, %s, %s)",
+                (email, password, name, lastname)
+            )
             con.commit()
             cursor.close()
             con.close()
             return True
         return False
-    
-    """def rec_note(self, email, note):
-        con = self.con()
-        if con:
-            cursor = con.cursor()
-            res = sentiment_analyzer(note)
-            print(res[0])
-            if res:
-                res = res[0]
-                label_mapping = {"LABEL_0": "neg","LABEL_1": "neu","LABEL_2": "pos"}
-                mood_label = label_mapping.get(res['label'])  
-                st.session_state['last_sentiment'] = mood_label
-                cursor.execute("INSERT INTO diary (email, text, sentiment, date) VALUES (%s, %s, %s, %s)", (email, note, mood_label, datetime.now().strftime('%Y-%m-%d')))
-                con.commit()
-                cursor.close()
-                con.close()
-                return True
-        return False"""
-    
-    def rec_note(self,email,note):
+
+    def rec_note(self, email, note):
         con = self.con()
         if con:
             cursor = con.cursor()
             res = sentiment_analyzer(note)
             mood_label = res[0]['label'].lower()
-
             st.session_state['last_sentiment'] = mood_label
-            
-            cursor.execute("INSERT INTO diary (email, text, sentiment, date) VALUES (%s, %s, %s, %s)", 
-                           (email, note, mood_label, datetime.now().strftime('%Y-%m-%d')))
+
+            cursor.execute(
+                "INSERT INTO diary (email, text, sentiment, date) VALUES (%s, %s, %s, %s)",
+                (email, note, mood_label, datetime.now().strftime('%Y-%m-%d'))
+            )
             con.commit()
             cursor.close()
             con.close()
             return True
         return False
-    
+
     def noti(self, email):
         con = self.con()
         if con:
@@ -251,29 +248,36 @@ class forquery(DB):
         con = self.con()
         if con:
             cursor = con.cursor()
-            cursor.execute("SELECT text, date, sentiment FROM diary WHERE  email = %s", (email,))
+            cursor.execute("SELECT text, date, sentiment FROM diary WHERE email = %s ORDER BY date DESC", (email,))
             history = cursor.fetchall()
             cursor.close()
             con.close()
             return history
         return None
-    
-    def dataDashboard (self, email, start_date, end_date):
+
+    def dataDashboard(self, email, start_date, end_date):
         con = self.con()
         if con:
-            cursor = con.cursor(dictionary=True)
-            cursor.execute("SELECT date, sentiment, COUNT(*) as count FROM diary WHERE email = %s AND date BETWEEN %s AND %s GROUP BY date, sentiment ORDER BY date", (email, start_date, end_date))
+            cursor = con.cursor(cursor_factory=RealDictCursor)
+            cursor.execute("""
+                SELECT date, sentiment, COUNT(*) AS count
+                FROM diary
+                WHERE email = %s AND date BETWEEN %s AND %s
+                GROUP BY date, sentiment
+                ORDER BY date
+            """, (email, start_date, end_date))
             data = cursor.fetchall()
             cursor.close()
             con.close()
             return data
-        return []    
+        return []
+
 
 #super class2 (for manage page)
 class Page:
     def display(self):
         raise NotImplementedError("huh")
-    
+
 #subclass  (for display)
 class LoginPage(Page, forquery):
     def display(self):
@@ -312,7 +316,7 @@ class RegisterPage(Page, forquery):
         password = st.text_input("รหัสผ่าน", type="password")
         confirm_password = st.text_input("ยืนยันรหัสผ่าน", type="password")
         col1, col2, col3, col4, col5 = st.columns(5)
-        
+
         with col1 :
             if st.button("สมัครสมาชิก"):
                 if not all([name, lastname, email, password, confirm_password]):
@@ -328,7 +332,7 @@ class RegisterPage(Page, forquery):
             if st.button("มีบัญชีอยู่แล้ว?"):
                 st.session_state["current_page"] = "Login"
                 st.rerun()
-                
+
 class DashboardPage:
     def display(self):
         forquery().noti(st.session_state["email"])
@@ -360,16 +364,16 @@ class DashboardPage:
                 if 'date' in df.columns and 'sentiment' in df.columns:
                     df["date"] = pd.to_datetime(df["date"], errors='coerce')
                     df = df.dropna(subset=["date"])
-                    
+
                     sentiment_map = {"pos": 1, "neu": 0, "neg": -1}
                     df["sentiment_numeric"] = df["sentiment"].map(sentiment_map)
                     df_trend = df.set_index("date").resample("D")["sentiment_numeric"].mean().reset_index()
 
                     if not df_trend.empty:
                         fig, ax = plt.subplots(figsize=(10, 5))
-                        sns.lineplot(data=df_trend, x="date", y="sentiment_numeric", 
-                                    marker="o", ax=ax, ci=None)
-                        
+                        sns.lineplot(data=df_trend, x="date", y="sentiment_numeric",
+                                    marker="o", ax=ax, errorbar=None)
+
                         ax.set(xlabel="วันที่",
                             ylabel="ค่าเฉลี่ย Sentiment (-1 ถึง 1)",
                             title="แนวโน้ม Sentiment รายวัน",
@@ -384,9 +388,9 @@ class DashboardPage:
                 #pie chart
                 st.subheader("📊 เปอร์เซ็นต์ของ Sentiment")
                 fig, ax = plt.subplots()
-                ax.pie(df_sen["percent"], 
-                    labels=df_sen["sentiment"], 
-                    autopct="%1.1f%%", 
+                ax.pie(df_sen["percent"],
+                    labels=df_sen["sentiment"],
+                    autopct="%1.1f%%",
                     colors=["#f8b9d4", "#f0d29d", "#5f9ca2"],
                     startangle=90)
                 st.pyplot(fig)
@@ -430,14 +434,14 @@ class DiaryPage(Page, forquery):
                 c1, c2, c3 = st.columns(3)
                 if sen == "pos":
                     with c2:
-                        st.image("C:/JJJ/JitJai-Journal/data/happy_mood.png")
+                        st.image("./data/happy_mood.png")
                     st.markdown("""<div style="background-color:#f8b9d4;padding:20px;border-radius:10px;color:white;margin:20px 0;">
                                 <h3>🎉เราดีใจที่วันนี้คุณมีความสุขนะ</h3>
                                 <p>เราดีใจนะ ที่วันนี้โลกใบนี้ใจดีกับคุณ</p>
                                 </div>""", unsafe_allow_html=True)
                 else :
                     with c2:
-                        st.image("C:/JJJ/JitJai-Journal/data/sad_mood.png")
+                        st.image("./data/sad_mood.png")
                     st.markdown("""<div style="background-color:#5f9ca2; padding:20px; border-radius:10px; color:white; margin:20px 0;">
                                 <h3>💪หากวันนี้คุณรู้สึกไม่ดี ไม่เป็นไรนะ</h3>
                                 <p>เราอยากจะบอกคุณว่าคุณไม่ได้อยู่คนเดียวบนโลกใบนี้</p>
@@ -466,10 +470,10 @@ st.logo(NAV_LOGO, icon_image=ICON_LOGO)
 if st.session_state["logged_in"]:
     with st.sidebar:
         selected = option_menu(
-            "📌 เมนูหลัก", 
-            ["แดชบอร์ด", "บันทึกอารมณ์", "ดูประวัติ", "ออกจากระบบ"], 
-            icons=["bar-chart", "calendar", "book", "box-arrow-right"], 
-            menu_icon="cast", 
+            "เมนูหลัก",
+            ["แดชบอร์ด", "บันทึกอารมณ์", "ดูประวัติ", "ออกจากระบบ"],
+            icons=["bar-chart", "calendar", "book", "box-arrow-right"],
+            menu_icon="cast",
             default_index=0
         )
 
@@ -483,7 +487,7 @@ if st.session_state["logged_in"]:
         st.session_state["logged_in"] = False
         st.session_state["current_page"] = "Login"
         st.rerun()
-        
+
 #select ss_state for display
 if st.session_state["current_page"] == "Login":
     LoginPage().display()
