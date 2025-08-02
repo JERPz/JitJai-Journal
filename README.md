@@ -1,4 +1,3 @@
-````markdown
 # 🚀 Project Setup & Usage Guide
 
 Welcome! This guide will help you get your project up and running quickly on **Mac/Linux** or **Windows**. The setup scripts will take care of everything—from spinning up Docker containers to launching the Streamlit app.
@@ -82,3 +81,4 @@ docker-compose down
 ```
 
 ---
+
