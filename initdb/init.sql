@@ -1,9 +1,5 @@
--- สร้างฐานข้อมูล
-CREATE DATABASE jjj;
-USE jjj;
-
 -- สร้างตารางผู้ใช้ (users)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) PRIMARY KEY,
     password VARCHAR(255) NOT NULL,
     fname VARCHAR(50) NOT NULL,
@@ -11,8 +7,8 @@ CREATE TABLE users (
 );
 
 -- สร้างตารางบันทึกไดอารี่ (diary)
-CREATE TABLE diary (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS diary (
+    id SERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
     text TEXT NOT NULL,
     sentiment VARCHAR(3) NOT NULL,
