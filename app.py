@@ -13,6 +13,8 @@ import psycopg2
 from psycopg2 import OperationalError
 import torch
 from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
+import os
 
 
 plt.rcParams['font.family'] = ['Sarabun', 'Tahoma', 'Thonburi', 'sans-serif']
@@ -21,12 +23,14 @@ plt.rcParams['axes.unicode_minus'] = False
 NAV_LOGO = "./data/logo1.png"
 ICON_LOGO = "./data/logo.png"
 
+load_dotenv()
+
 forDB = {
-    "host": "localhost",
-    "database": "jjj",
-    "user": "root",
-    "password": "rootpass",
-    "port": 5432
+    "host": os.getenv("DB_HOST"),
+    "database": os.getenv("DB_NAME"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASS"),
+    "port": os.getenv("DB_PORT")
 }
 
 #thx u Khun Poom-Sci alot kub
