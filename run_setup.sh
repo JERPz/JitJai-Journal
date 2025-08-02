@@ -14,7 +14,7 @@ source venv/bin/activate
 
 # --- 3. Install Python dependencies ---
 echo "Installing Python dependencies from requirements.txt..."
-pip install -r requirements.txt
+pip install -r requiments.txt
 
 # --- 4. Run the Streamlit application ---
 echo "Running the Streamlit app..."
